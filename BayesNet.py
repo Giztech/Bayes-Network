@@ -12,7 +12,6 @@ class BayesNet:
         for val in fileline:
             if not val:
                 continue
-            print(val)
             val = val.split('{\n')
             head = val[0].split()
             type = head[0]
@@ -30,7 +29,12 @@ class BayesNet:
                 var = dependence[1]
                 parents = dependence[2]
                 node = self.getNode(var)
-                node.parent = parents.split(',')
+                if parents:
+                    node.parent = parents.split(',')
+                    for parent in node.parent:
+                        par = self.getNode(parent)
+                        print(par)
+                        par.children.append(node)
                 #deal with rest
                 rest = rest.split(';\n')
                 for r in rest:
@@ -41,14 +45,14 @@ class BayesNet:
                         probs = prob[2].split((','))
                         node.prob[prob[1]] = {}
                         for i in range(len(node.domain)):
-                            node.prob[prob[1]][node.domain[i]] = probs[i]
+                            node.prob[prob[1]][node.domain[i]] = float(probs[i])
                     else:
                         probs = re.split(r"[' ',]", r)
                         while '' in probs:
                             probs.remove('')
                         probs = probs[1:]
                         for i in range(len(node.domain)):
-                            node.prob[node.domain[i]] = probs[i]
+                            node.prob[node.domain[i]] = float(probs[i])
 
     def getNode(self, varName):
         for node in self.nodes:

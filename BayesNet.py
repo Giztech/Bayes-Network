@@ -5,6 +5,7 @@ class BayesNet:
     def __init__(self, file):
         self.file_name = file
         self.nodes = []
+        self.variables = []
 
     def generateList(self):
         file = open(self.file_name, 'r')  # opens file
@@ -24,6 +25,7 @@ class BayesNet:
                 rest = re.split(r'{|}', rest)
                 domain = rest[1].replace(" ", '').split(',')
                 self.nodes.append(Node(name, domain))
+                self.variables.append(name)
             elif rest and type == 'probability':
                 dependence = re.split(r'[(|)]', val[0].replace(" ", ''))
                 var = dependence[1]
@@ -33,7 +35,6 @@ class BayesNet:
                     node.parent = parents.split(',')
                     for parent in node.parent:
                         par = self.getNode(parent)
-                        print(par)
                         par.children.append(node)
                 #deal with rest
                 rest = rest.split(';\n')
@@ -58,6 +59,7 @@ class BayesNet:
         for node in self.nodes:
             if node.name == varName:
                 return node
+
 
 
 

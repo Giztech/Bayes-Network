@@ -35,7 +35,7 @@ class BayesNet:
                     node.parent = parents.split(',')
                     for parent in node.parent:
                         par = self.getNode(parent)
-                        par.children.append(node)
+                        par.children.append(node.name)
                 #deal with rest
                 rest = rest.split(';\n')
                 for r in rest:

@@ -14,7 +14,7 @@ class ExactInference:
         for v in reversed(bn.variables):
             factors[v] = self.makeFactor(v, evidence, bn)
             if v != query and v not in evidence.keys():    #is a hidden variable if hidden we sum over that var
-                factors = self.sumOut(v, factors)
+                factors = self.sumOut(v, factors, bn)
         return np.linalg.norm(self.pointwiseProduct(factors))
 
 
@@ -48,8 +48,24 @@ class ExactInference:
                     factors[key][vk] = node.prob[key][vk]
         return factors #dict of probs
 
-    def sumOut(self, v, factors):
+    def sumOut(self, v, factors, bn):
         #iterate over domain v
+        v_node = bn.getNode(v)
+        for d in v_node.domain:
+            to_pp = []
+            for key, factor in factors[v].items():
+                arr = []
+                if type(factor) == dict:
+                    for key, val in factor.items():
+                        arr.append(val)
+                else:
+                    arr.append(factor)
+                to_pp.append(arr)
+            print(v_node.name)
+            print(to_pp)
+            quit()
+            self.pointwiseProduct(to_pp)
+
         return factors
 
     def pointwiseProduct(self, factors):

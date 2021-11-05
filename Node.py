@@ -4,4 +4,4 @@ class Node:
         self.domain = domain
         self.parent = []
         self.prob = {}
-        self.children = [] #list of nodes
+        self.children = []

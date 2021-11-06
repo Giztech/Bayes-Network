@@ -10,11 +10,16 @@ class ExactInference:
             print("NOPE")
             quit()
         factors = {}    #3d dict [v][string of parents][v.domain val]
+        fact = []
         # instead of reversed do we need a heuristic for ordering
         for v in reversed(bn.variables):
+            print(v)
             factors[v] = [self.makeFactor(v, evidence, bn)]
+            fact = [self.makeFactor(v, evidence, bn)] + []
             if v != query and v not in evidence.keys():    #is a hidden variable if hidden we sum over that var
-                factors = self.sumOut(v, factors, bn)    #this might be wrong
+                print('calling SumOut')
+                fact = [self.sumOut(v, factors, bn)]
+                factors = {v: fact[0]}
         return np.linalg.norm(self.pointwiseProduct(factors))
 
 
@@ -58,12 +63,11 @@ class ExactInference:
         looking_f_keys = [v]
         for f in factors.keys():
             f_node = bn.getNode(f)
-            # if v in f_node.children:  #if v is a parent of f
-            #     looking_f.append(factors[f])
-            #     looking_f_keys.append(f_node.name)
+            print(f)
             if v in f_node.parent:  #if v is a child of f
                 looking_f.append(factors[f])
                 looking_f_keys.append(f_node.name)
+        ret_val = []
         for d in v_node.domain: #get var at all stages, make factors for each
             to_pp = []
             for i in range(len(looking_f)):
@@ -77,52 +81,67 @@ class ExactInference:
                             out[var][d] = val[d]
                 else:
                     #now v is a part of outer vals
-                    par_vals = []
-                    print(par_vals)
-                    print(bn.getNode(looking_f_keys[i]).parent)
-                    for par in bn.getNode(looking_f_keys[i]).parent:
-                        if par == v:
-                            par_vals.append([d])
-                            print('this')
-                        else:
-                            par_vals.append(bn.getNode(par).domain)
-                        print(par_vals)
-                    par_keys = list(itertools.product(*par_vals))
-                    print(looking_f[i][0])
-                    for p in par_keys:
-                        key = ""
-                        for val in p:
-                            key += str(val) + ', '
-                        key = key[:-2]
-                        print(key)
-                        out[p] = looking_f[i][0][key]
+                    if len(bn.getNode(looking_f_keys[i]).parent) != 0:
+                        par_vals = []
+                        for par in bn.getNode(looking_f_keys[i]).parent:
+                            if par == v:
+                                par_vals.append([d])
+                            else:
+                                par_vals.append(bn.getNode(par).domain)
+                        par_keys = list(itertools.product(*par_vals))
+                        for p in par_keys:
+                            key = ""
+                            for val in p:
+                                key += str(val) + ', '
+                            key = key[:-2]
+                            out[p] = looking_f[i][0][key]
                 to_pp.append(out)
             print(len(to_pp))
-            #print(looking_f_keys)
-            self.pointwiseProduct(to_pp, looking_f_keys, bn)
+            print(looking_f_keys)
+            if len(ret_val) == 0:
+                ret_val = self.pointwiseProduct(to_pp, looking_f_keys, bn)
+            else:
+                pp = self.pointwiseProduct(to_pp, looking_f_keys, bn)
+                for i in range(len(ret_val)):
+                    ret_val[i] += pp[i]
             # pp + pp + pp
             #need to return factors as dict of dicts
-        quit()
-        return factors
+        print('ret_val', ret_val)
+        return ret_val
 
-    def pointwiseProduct(self, factors, keys, bn):
-        #checking if
+    def pointwiseProduct(self, factors, keys, bn):  #return a matrix
+        print('pp')
         if len(factors) == 1:
-            return {keys[0]: factors}
+            return self.dict_to_matrix(factors)   #get fixed
         else:
+            overlap = keys[0]
+            out = []
+            print(out)
             for i in range(len(factors)):
-                check = bn.getNode(keys[i]).parent
+                print(factors[i])
+                check = bn.getNode(keys[i]).parent.copy()
                 check.append(keys[i])
-                #print('this', check)
+                print('this', check)
                 if i == 0:
-                    #inside
-                    pass
+                    out = self.dict_to_matrix(factors[i])
                 else:
-                    #outside
-                    pass
-                print(bn.getNode(keys[i]).parent)
-        #quit()
-        return factors
+                    mult = self.dict_to_matrix(factors[i])
+                    temp = []
+                    for o in out:
+                        for m in mult:
+                            temp.append(o*m)
+                    out = temp
+            print(out)
+            return out
 
     def dict_to_matrix(self, dict):
-        pass
+        out = []
+        for keys, vals in dict.items():
+            try:
+                for keys1, vals1 in vals.items():
+                    out.append(vals1)
+            except:
+                out.append(vals)
+        print('dtm', out)
+        return out
+

@@ -5,3 +5,7 @@ class Node:
         self.parent = []
         self.prob = {}
         self.children = []
+        self.state = ''
+
+    def updateState(self, state):
+        self.state = state

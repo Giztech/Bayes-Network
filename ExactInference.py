@@ -78,17 +78,23 @@ class ExactInference:
                 else:
                     #now v is a part of outer vals
                     par_vals = []
+                    print(par_vals)
+                    print(bn.getNode(looking_f_keys[i]).parent)
                     for par in bn.getNode(looking_f_keys[i]).parent:
                         if par == v:
                             par_vals.append([d])
+                            print('this')
                         else:
                             par_vals.append(bn.getNode(par).domain)
+                        print(par_vals)
                     par_keys = list(itertools.product(*par_vals))
+                    print(looking_f[i][0])
                     for p in par_keys:
                         key = ""
                         for val in p:
                             key += str(val) + ', '
                         key = key[:-2]
+                        print(key)
                         out[p] = looking_f[i][0][key]
                 to_pp.append(out)
             print(len(to_pp))
@@ -107,7 +113,7 @@ class ExactInference:
             for i in range(len(factors)):
                 check = bn.getNode(keys[i]).parent
                 check.append(keys[i])
-                print('this', check)
+                #print('this', check)
                 if i == 0:
                     #inside
                     pass

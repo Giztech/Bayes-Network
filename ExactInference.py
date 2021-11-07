@@ -10,16 +10,13 @@ class ExactInference:
             print("NOPE")
             quit()
         factors = {}    #3d dict [v][string of parents][v.domain val]
-        fact = []
         # instead of reversed do we need a heuristic for ordering
         for v in reversed(bn.variables):
             print(v)
             factors[v] = [self.makeFactor(v, evidence, bn)]
-            fact = [self.makeFactor(v, evidence, bn)] + []
             if v != query and v not in evidence.keys():    #is a hidden variable if hidden we sum over that var
                 print('calling SumOut')
-                fact = [self.sumOut(v, factors, bn)]
-                factors = {v: fact[0]}
+                factors = {v: self.sumOut(v, factors, bn)}
         return np.linalg.norm(self.pointwiseProduct(factors))
 
 
@@ -59,14 +56,15 @@ class ExactInference:
         #iterate over domain v
         print('var', v)
         v_node = bn.getNode(v)
-        looking_f = [factors[v]]     #list of dicts
+        looking_f = factors[v]    #list of dicts
         looking_f_keys = [v]
         for f in factors.keys():
             f_node = bn.getNode(f)
-            print(f)
             if v in f_node.parent:  #if v is a child of f
-                looking_f.append(factors[f])
+                looking_f += factors[f]
                 looking_f_keys.append(f_node.name)
+                print(looking_f)
+                print(looking_f_keys)
         ret_val = []
         for d in v_node.domain: #get var at all stages, make factors for each
             to_pp = []
@@ -74,9 +72,9 @@ class ExactInference:
                 out = {}
                 if i == 0:
                     if len(bn.getNode(looking_f_keys[i]).parent) == 0:
-                        out = looking_f[i][0][d]
+                        out[v] = looking_f[i][d]
                     else:
-                        for var, val in looking_f[i][0].items():
+                        for var, val in looking_f[i].items():
                             out[var] = {}
                             out[var][d] = val[d]
                 else:
@@ -94,34 +92,46 @@ class ExactInference:
                             for val in p:
                                 key += str(val) + ', '
                             key = key[:-2]
-                            out[p] = looking_f[i][0][key]
+                            out[p] = looking_f[i][key]
+                    else:
+                        print('ERROR')
+                        quit()
                 to_pp.append(out)
-            print(len(to_pp))
-            print(looking_f_keys)
             if len(ret_val) == 0:
                 ret_val = self.pointwiseProduct(to_pp, looking_f_keys, bn)
             else:
                 pp = self.pointwiseProduct(to_pp, looking_f_keys, bn)
                 for i in range(len(ret_val)):
                     ret_val[i] += pp[i]
-            # pp + pp + pp
-            #need to return factors as dict of dicts
-        print('ret_val', ret_val)
-        return ret_val
+        #turn list back to dict
+        for c in v_node.children:
+            if c in factors.keys():
+                c_node = bn.getNode(c)
+                if len(c_node.originalParents) == 0:
+                    c_node.originalParents = c_node.parent
+                temp = c_node.originalParents.copy()
+                temp.remove(v)
+                v_node.parent += temp
+                v_node.parent.append(c)
+        par_val = []
+        for par in v_node.parent:
+            par_val.append(bn.getNode(par).domain)
+        par_keys = list(itertools.product(*par_val))
+        # print(par_keys)
+        # print(v_node.parent)
+        # print(looking_f_keys)
+        # print('ret_val', ret_val)
+        new_dict = {}
+        for i in range(len(par_keys)):
+            new_dict[par_keys[i]] = ret_val[i]
+        return new_dict
 
     def pointwiseProduct(self, factors, keys, bn):  #return a matrix
-        print('pp')
         if len(factors) == 1:
             return self.dict_to_matrix(factors)   #get fixed
         else:
-            overlap = keys[0]
             out = []
-            print(out)
             for i in range(len(factors)):
-                print(factors[i])
-                check = bn.getNode(keys[i]).parent.copy()
-                check.append(keys[i])
-                print('this', check)
                 if i == 0:
                     out = self.dict_to_matrix(factors[i])
                 else:
@@ -131,7 +141,6 @@ class ExactInference:
                         for m in mult:
                             temp.append(o*m)
                     out = temp
-            print(out)
             return out
 
     def dict_to_matrix(self, dict):
@@ -142,6 +151,5 @@ class ExactInference:
                     out.append(vals1)
             except:
                 out.append(vals)
-        print('dtm', out)
         return out
 

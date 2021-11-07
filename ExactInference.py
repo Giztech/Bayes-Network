@@ -10,13 +10,16 @@ class ExactInference:
             print("NOPE")
             quit()
         factors = {}    #3d dict [v][string of parents][v.domain val]
+        fact = []
         # instead of reversed do we need a heuristic for ordering
         for v in reversed(bn.variables):
+            print(v)
             factors[v] = [self.makeFactor(v, evidence, bn)]
+            fact = [self.makeFactor(v, evidence, bn)] + []
             if v != query and v not in evidence.keys():    #is a hidden variable if hidden we sum over that var
                 print('calling SumOut')
-                print(factors[v])
-                factors = self.sumOut(v, factors, bn)
+                fact = [self.sumOut(v, factors, bn)]
+                factors = {v: fact[0]}
         return np.linalg.norm(self.pointwiseProduct(factors))
 
 
@@ -60,26 +63,22 @@ class ExactInference:
         looking_f_keys = [v]
         for f in factors.keys():
             f_node = bn.getNode(f)
-            # if v in f_node.children:  #if v is a parent of f
-            #     looking_f.append(factors[f])
-            #     looking_f_keys.append(f_node.name)
+            print(f)
             if v in f_node.parent:  #if v is a child of f
                 looking_f.append(factors[f])
                 looking_f_keys.append(f_node.name)
+        ret_val = []
         for d in v_node.domain: #get var at all stages, make factors for each
             to_pp = []
             for i in range(len(looking_f)):
-                val = []
                 out = {}
                 if i == 0:
                     if len(bn.getNode(looking_f_keys[i]).parent) == 0:
                         out = looking_f[i][0][d]
-                        val = looking_f_keys[i]
                     else:
                         for var, val in looking_f[i][0].items():
                             out[var] = {}
                             out[var][d] = val[d]
-
                 else:
                     #now v is a part of outer vals
                     if len(bn.getNode(looking_f_keys[i]).parent) != 0:
@@ -99,18 +98,50 @@ class ExactInference:
                 to_pp.append(out)
             print(len(to_pp))
             print(looking_f_keys)
-            self.pointwiseProduct(to_pp)
+            if len(ret_val) == 0:
+                ret_val = self.pointwiseProduct(to_pp, looking_f_keys, bn)
+            else:
+                pp = self.pointwiseProduct(to_pp, looking_f_keys, bn)
+                for i in range(len(ret_val)):
+                    ret_val[i] += pp[i]
             # pp + pp + pp
             #need to return factors as dict of dicts
+        print('ret_val', ret_val)
+        return ret_val
 
-        return factors
-
-    def pointwiseProduct(self, factors):
-        #are we essentially checking if inner value is the same and doing some multiplication
+    def pointwiseProduct(self, factors, keys, bn):  #return a matrix
+        print('pp')
         if len(factors) == 1:
-            return factors
-        # else:
-        #     for f in factors:
-        #         print(f)
-        #     quit()
-        return factors
+            return self.dict_to_matrix(factors)   #get fixed
+        else:
+            overlap = keys[0]
+            out = []
+            print(out)
+            for i in range(len(factors)):
+                print(factors[i])
+                check = bn.getNode(keys[i]).parent.copy()
+                check.append(keys[i])
+                print('this', check)
+                if i == 0:
+                    out = self.dict_to_matrix(factors[i])
+                else:
+                    mult = self.dict_to_matrix(factors[i])
+                    temp = []
+                    for o in out:
+                        for m in mult:
+                            temp.append(o*m)
+                    out = temp
+            print(out)
+            return out
+
+    def dict_to_matrix(self, dict):
+        out = []
+        for keys, vals in dict.items():
+            try:
+                for keys1, vals1 in vals.items():
+                    out.append(vals1)
+            except:
+                out.append(vals)
+        print('dtm', out)
+        return out
+

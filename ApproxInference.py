@@ -35,7 +35,12 @@ class ApproxInference:
 
 
         return markov_list
-
+    '''
+    sets the initial values of the bayesian network by starting at the top node
+    and setting the state based on the probability provided
+    the non-root nodes are set based on the states of it's parents 
+    and the probabilities provided
+    '''
     def forwardSampling(self, evidence, bn):
         # if the node is evidence, we want to set it first!
         for node in bn.nodes:
@@ -54,53 +59,16 @@ class ApproxInference:
                     for key, val in node.prob.items():
                         problist.append(float(val))
                         keylist.append(key)
-                    value = rand.random()
-
-                    for y in range(len(problist)):
-                        if y == 0:
-                            # if the random value is less than the first probability num
-                            if value < problist[y]:
-                                bn.updateState(node, keylist[y])
-                                break
-                            else:
-                                continue
-                        # the current value to be looking at should be the previous prbability plus the current probability
-                        problist[y] += problist[y - 1]
-                        if value < problist[y]:
-                            bn.updateState(node, keylist[y])
-                            break
+                    bn = self.updateState(node, problist, keylist, bn)
                 else:
-                    parList = ''
-                    for p in parents:
-                        parNode = bn.getNode(p)
-                        if parNode.state == '':
-                            bn = self.setParent(parNode, bn)
-                        parList += (parNode.state) + ', '
-                    parList = parList[:-2]
-                    problist = []
-                    keylist = []
-                    for key, val in node.prob.items():
-                        if parList == key:
-                            for key1, val1 in node.prob[key].items():
-                                problist.append(float(val1))
-                                keylist.append(key1)
-                    value = rand.random()
-                    for y in range(len(problist)):
-                        if y == 0:
-                            # if the random value is less than the first probability num
-                            if value < problist[y]:
-                                bn.updateState(node, keylist[y])
-                                break
-                            else:
-                                continue
-                        # the current value to be looking at should be the previous prbability plus the current probability
-                        problist[y] += problist[y - 1]
-                        if value < problist[y]:
-                            bn.updateState(node, keylist[y])
-                            break
-
+                    problist, keylist = self.getProb(parents, node, bn)
+                    bn = self.updateState(node, problist, keylist, bn)
         return bn
 
+    '''
+    called when the node's parents need to have their states set
+    used only for forward sampling
+    '''
     def setParent(self, m, bn):
         gms = m.parent
         if len(gms) == 0:
@@ -110,50 +78,52 @@ class ApproxInference:
             for key, val in m.prob.items():
                 problist.append(float(val))
                 keylist.append(key)
-            value = rand.random()
+            return self.updateState(m, problist, keylist, bn)
+        problist, keylist = self.getProb(gms, m, bn)
+        return self.updateState(m, problist, keylist, bn)
 
-            for y in range(len(problist)):
-                if y == 0:
-                    # if the random value is less than the first probability num
-                    if value < problist[y]:
-                        bn.updateState(m, keylist[y])
-                        return bn
-                    else:
-                        continue
-                # the current value to be looking at should be the previous prbability plus the current probability
-                problist[y] += problist[y-1]
-                if value < problist[y]:
-                    bn.updateState(m, keylist[y])
-                    return bn
-        parList = ''
-        for g in gms:
-            gnode = bn.getNode(g)
-            if gnode.state == '':
-                bn = self.setParent(gnode, bn)
-            parList += (gnode.state) + ', '
-        parList = parList[:-2]
-        problist = []
-        keylist = []
-        for key, val in m.prob.items():
-            if parList == key:
-                for key1, val1 in m.prob[key].items():
-                    problist.append(float(val1))
-                    keylist.append(key1)
+    '''
+    generates a random number and based on the probability, sets the state of the node given 
+    '''
+    def updateState(self, node, problist, keylist, bn):
         value = rand.random()
         for y in range(len(problist)):
             if y == 0:
                 # if the random value is less than the first probability num
                 if value < problist[y]:
-                    bn.updateState(m, keylist[y])
+                    bn.updateState(node, keylist[y])
                     return bn
                 else:
                     continue
             # the current value to be looking at should be the previous prbability plus the current probability
             problist[y] += problist[y - 1]
             if value < problist[y]:
-                bn.updateState(m, keylist[y])
+                bn.updateState(node, keylist[y])
                 return bn
+    '''
+    Gets the probability list and key list for the given node and it's parents
+    used only for forward sampling
+    '''
+    def getProb(self, parents, node, bn):
+        parList = ''
+        for p in parents:
+            parNode = bn.getNode(p)
+            if parNode.state == '':
+                bn = self.setParent(parNode, bn)
+            parList += (parNode.state) + ', '
+        parList = parList[:-2]
+        problist = []
+        keylist = []
+        for key, val in node.prob.items():
+            if parList == key:
+                for key1, val1 in node.prob[key].items():
+                    problist.append(float(val1))
+                    keylist.append(key1)
+        return problist, keylist
 
+    '''
+    samples the current node and sets the value based on the markov blanket
+    '''
     def setValue(self, node, bn):
         mb = self.get_markov_blanket(node, bn)
         # print(mb)
@@ -213,42 +183,9 @@ class ApproxInference:
             for m in total_prob:
                 calc_prob.append(m / total)
         # print('calc_prob', calc_prob)
-        value = rand.random()
-        for y in range(len(calc_prob)):
-            if y == 0:
-                # if the random value is less than the first probability num
-                if value < calc_prob[y]:
-                    bn.updateState(node, node.domain[y])
-                    # print('newstate', node.domain[y])
-                    return bn
-                else:
-                    continue
-            # the current value to be looking at should be the previous prbability plus the current probability
-            calc_prob[y] += calc_prob[y - 1]
-            if value < calc_prob[y]:
-                bn.updateState(node, node.domain[y])
-                # print('newstate', node.domain[y])
-                return bn
+        bn = self.updateState(node, calc_prob, node.domain, bn)
 
-
-
-        # parList = ''
-        # for par in mbp:
-        #     parNode = bn.getNode(par)
-        #     parList += (parNode.state) + ', '
-        # parList = parList[:-2]
-        # problist = []
-        # keylist = []
-        # for key, val in node.prob.items():
-        #     if parList == key:
-        #         for key1, val1 in node.prob[key].items():
-        #             problist.append(float(val1))
-        #             keylist.append(key1)
-        # print(problist)
-
-
-
-
+        return bn
 
 
     def gibbsSampling(self, X, evidence, bn, N):
@@ -270,7 +207,7 @@ class ApproxInference:
         # forward sampling to set the initial values for bn
         x = self.forwardSampling(evidence, bn)
         # for node in x.nodes:
-        #     print(node.name)
+        #     # print(node.name)
         #     # print(node.domain)
         #     if node.state == '':
         #         print('aint no satte here')
@@ -300,8 +237,7 @@ class ApproxInference:
         total = 0
         for key, val in count.items():
             total += val
-        normalized = {}
-        for key,val in count.items():
+        for key, val in count.items():
             count[key] = val/total
         print(count, 'normalized')
 

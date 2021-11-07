@@ -86,12 +86,14 @@ class ExactInference:
                                 par_vals.append([d])
                             else:
                                 par_vals.append(bn.getNode(par).domain)
+                        print(bn.getNode(looking_f_keys[i]).parent)
                         par_keys = list(itertools.product(*par_vals))
                         for p in par_keys:
                             key = ""
                             for val in p:
                                 key += str(val) + ', '
                             key = key[:-2]
+                            print('this', looking_f[i])
                             out[p] = looking_f[i][key]
                     else:
                         print('ERROR')

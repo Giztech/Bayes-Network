@@ -60,7 +60,6 @@ class BayesNet:
             if node.name == varName:
                 return node
     def updateState(self, node, state):
-        print('staetetee', state)
         for n in self.nodes:
             if n == node:
                 n.state = state

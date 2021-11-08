@@ -1,11 +1,16 @@
 from BayesNet import BayesNet
 from ExactInference import ExactInference
+from ApproxInference import  ApproxInference
 
 def main():
     bn = BayesNet('data/alarm.bif')
     bn.generateList()
     ei = ExactInference()
+    ai = ApproxInference()
 
+    ai.gibbsSampling('HYPOVOLEMIA', {'HRBP': 'HIGH', 'CO': 'LOW', 'BP': 'HIGH'}, bn, 10000)
+
+    """
     #Alarm
 
     #Little Evidence
@@ -17,9 +22,9 @@ def main():
     ei.variableElimination('HYPOVOLEMIA', {'HRBP' : 'HIGH', 'CO' : 'LOW', 'BP' : 'HIGH', 'HRSAT' : 'LOW', 'HREKG' : 'LOW', 'HISTORY' :'TRUE'}, bn)
     ei.variableElimination('LVFAILURE', {'HRBP' : 'HIGH', 'CO' : 'LOW', 'BP' : 'HIGH', 'HRSAT' : 'LOW', 'HREKG' : 'LOW', 'HISTORY' :'TRUE'}, bn)
     ei.variableElimination('ERRLOWOUTPUT', {'HRBP' : 'HIGH', 'CO' : 'LOW', 'BP' : 'HIGH', 'HRSAT' : 'LOW', 'HREKG' : 'LOW', 'HISTORY' :'TRUE'}, bn)
+    """
 
-
-
+    """"    
     #Child
 
     bn = BayesNet('data/child.bif')
@@ -31,7 +36,9 @@ def main():
 
     #Moderate Evidence
     ei.variableElimination('Disease',{'LowerBodyO2': '<5', 'RUQO2': '>=12', 'CO2Report': '>=7.5', 'XrayReport': 'Asy/Patchy', 'GruntingReport' : 'Yes', 'Age' : '11-30 Days'},bn)
+    """
 
+    """"
     #Hailfinder
 
     bn = BayesNet('data/hailfinder.bif')
@@ -47,7 +54,9 @@ def main():
 
     ei.variableElimination('SatContMoist',{'RSfest': 'XNIL', 'N32StarFest': 'XNIL', 'MountainFest': 'XNIL', 'AreaMoDryAir': 'VeryWet', 'ComboVerMo' : 'Down', 'AreaMeso_ALS' : 'Down', 'CurPropConv' : 'Strong'},bn)
     ei.variableElimination('LLIW',{'RSfest': 'XNIL', 'N32StarFest': 'XNIL', 'MountainFest': 'XNIL', 'AreaMoDryAir': 'VeryWet','ComboVerMo': 'Down', 'AreaMeso_ALS': 'Down', 'CurPropConv': 'Strong'}, bn)
+    """
 
+    """"
     #Insurance
 
     bn = BayesNet('data/insurance.bif')
@@ -65,14 +74,14 @@ def main():
     ei.variableElimination('MedCost',{'Age': 'Adolescent', 'GoodStudent': 'False', 'SeniorTrain': 'False', 'DrivQuality': 'Poor', 'MakeModel' : 'Luxury', 'CarValue' : 'FiftyThousand','DrivHistory': 'Zero'},bn)
     ei.variableElimination('MedCost',{'Age': 'Adolescent', 'GoodStudent': 'False', 'SeniorTrain': 'False', 'DrivQuality': 'Poor','MakeModel': 'Luxury', 'CarValue': 'FiftyThousand', 'DrivHistory': 'Zero'}, bn)
     ei.variableElimination('MedCost',{'Age': 'Adolescent', 'GoodStudent': 'False', 'SeniorTrain': 'False', 'DrivQuality': 'Poor','MakeModel': 'Luxury', 'CarValue': 'FiftyThousand', 'DrivHistory': 'Zero'}, bn)
+    """
 
+    """"
     #Win95
 
     bn = BayesNet('data/win95pts.bif')
     bn.generateList()
     ei = ExactInference()
-
-
 
     #Evidence 1
 
@@ -127,6 +136,8 @@ def main():
     ei.variableElimination('Problem4',{'Problem6' : 'Yes'},bn)
     ei.variableElimination('Problem5',{'Problem6' : 'Yes'},bn)
     ei.variableElimination('Problem6',{'Problem6' : 'Yes'},bn)
+    
+    """
 
 if __name__ == '__main__':
     main()

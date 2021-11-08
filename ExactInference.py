@@ -3,6 +3,7 @@ import itertools
 
 class ExactInference:
     def __init__(self):
+        self.count = 0
         pass
 
     def variableElimination(self, query, evidence, bn):
@@ -11,16 +12,13 @@ class ExactInference:
             quit()
         factors = {}   #3d dict [v][string of parents][v.domain val]
         # instead of reversed do we need a heuristic for ordering
-        i = 0
-        for v in reversed(bn.variables):
-            i+=1
+        for v in bn.variables:
             print(v)
             factors = {**self.makeFactor(v, evidence, bn), **factors}
             if v != query and v not in evidence.keys():    #is a hidden variable if hidden we sum over that var
                 print('calling SumOut')
                 factors = self.sumOut(v, factors, bn)
-                if i ==9:
-                    quit()
+
         print('ENDING')
         return np.linalg.norm(self.dict_to_matrix(self.pointwiseProduct(factors.values(), factors.keys(), bn)))
 
@@ -29,11 +27,14 @@ class ExactInference:
         #get probs
         out = {}
         node = bn.getNode(v)
+
         for child in [v] + node.children:
             var = []
             par_val = []
             factors = {}
             c_node = bn.getNode(child)
+            if c_node.prob == {}:
+                continue
             for par in c_node.parent:
                 if par not in e.keys():
                     var.append(par)
@@ -59,7 +60,9 @@ class ExactInference:
                         key += str(val) + ', '
                     key = key[:-2]
                     for vk in v_key:
+                        print('makefactor', key, vk, c_node.prob)
                         factors[key + ", " + vk] = c_node.prob[key][vk]
+
             out[str(c_node.parent + [child])] = factors
         return out #dict of probs
 
@@ -72,6 +75,7 @@ class ExactInference:
         for c in v_node.children:
             c_node = bn.getNode(c)
             c_node.parent.remove(v)
+            c_node.prob = {}
 
         looking_f = []
         looking_f_keys = []
@@ -83,6 +87,7 @@ class ExactInference:
         pp = self.pointwiseProduct(looking_f, looking_f_keys, bn)
         # print('this', looking_f_keys)
         mylist = {}
+        print(pp)
         for key, val in pp.items():
             k = key
             check = self.key_to_string(key)
@@ -90,7 +95,8 @@ class ExactInference:
                 if c == v:
                     loc = check.index(c)
                     # print(loc)
-            del check[loc]
+                    del check[loc]
+
             newkey = str(check)
             for d in v_node.domain:
                 for key1, value in val.items():
@@ -105,7 +111,7 @@ class ExactInference:
 
 
 
-        # print(mylist)
+        print('after sumout', {newkey: mylist}, '\n\n')
         return {newkey: mylist}
 
     def pointwiseProduct(self, factors, keys, bn):
@@ -165,146 +171,4 @@ class ExactInference:
         check = check.replace(" ", "")
         check = check.split(',')
         return check
-
-
-        # ret_val = []
-        # for d in v_node.domain: #get var at all stages, make factors for each
-        #     to_pp = []
-        #     for i in range(len(looking_f)):
-        #         out = {}
-        #         if i == 0:
-        #             if len(bn.getNode(looking_f_keys[i]).parent) == 0:
-        #                 out[v] = looking_f[i][d]
-        #             else:
-        #                 for var, val in looking_f[i].items():
-        #                     out[var] = {}
-        #                     out[var][d] = val[d]
-        #         else:
-        #             #now v is a part of outer vals
-        #             if len(bn.getNode(looking_f_keys[i]).parent) != 0:
-        #                 par_vals = []
-        #                 for par in bn.getNode(looking_f_keys[i]).parent:
-        #                     if par == v:
-        #                         par_vals.append([d])
-        #                     else:
-        #                         if bn.getNode(par).domain_exists == True:
-        #                             par_vals.append(bn.getNode(par).domain)
-        #                 par_keys = list(itertools.product(*par_vals))
-        #                 for p in par_keys:
-        #                     key = ""
-        #                     for val in p:
-        #                         key += str(val) + ', '
-        #                     key = key[:-2]
-        #                     out[key] = looking_f[i][key]
-        #             else:
-        #                 print('ERROR')
-        #                 quit()
-        #         to_pp.append(out)
-        #     if len(ret_val) == 0:
-        #         ret_val = self.pointwiseProduct(to_pp, looking_f_keys, bn, v)
-        #     else:
-        #         pp = self.pointwiseProduct(to_pp, looking_f_keys, bn, v)
-        #         for i in range(len(ret_val)):
-        #             ret_val[i] += pp[i]
-        #
-        # # turn list back to dict
-        # for c in v_node.children:
-        #     if c in factors.keys():
-        #         c_node = bn.getNode(c)
-        #         if len(c_node.originalParents) == 0:
-        #             c_node.originalParents = c_node.parent
-        #         temp = c_node.originalParents.copy()
-        #         temp.remove(v)
-        #         v_node.parent += temp
-        #         v_node.parent.append(c)
-        # v_node.domain_exists = False
-        # par_val = []
-        # for par in v_node.parent:
-        #     if bn.getNode(par).domain_exists == True:
-        #         par_val.append(bn.getNode(par).domain)
-        # par_keys = list(itertools.product(*par_val))
-        # # print(par_keys)
-        # # print(v_node.parent)
-        # # print(looking_f_keys)
-        # # print('ret_val', ret_val)
-        # new_dict = {}
-        # for i in range(len(par_keys)):
-        #     key = ""
-        #     for val in par_keys[i]:
-        #         key += str(val) + ', '
-        #     key = key[:-2]
-        #     new_dict[key] = ret_val[i]
-        # print(new_dict)
-        # return [new_dict]
-
-
-    #
-    #
-    #
-    #
-    #
-    #
-    #         if len(notable_var) == 0:
-    #             for i in range(len(factors)):
-    #                 if i == 0:
-    #                     out = self.dict_to_matrix(factors[i])
-    #                 else:
-    #                     mult = self.dict_to_matrix(factors[i])
-    #                     temp = []
-    #                     for o in out:
-    #                         for m in mult:
-    #                             temp.append(o*m)
-    #                     out = temp
-    #         else:
-    #             print(notable_var)
-    #             for n in notable_var:
-    #                 for d in bn.getNode(n).domain:
-    #                     for i in range(len(factors)):
-    #                         if i == 0:
-    #                             out = self.dict_to_matrix(factors[i])
-    #                             if bn.getNode(keys[i]).name == n:
-    #                                 pass
-    #                             elif n in
-    #                         else:
-    #                             mult = self.dict_to_matrix(factors[i])
-    #                             print(bn.getNode(keys[i]))
-    #                             temp = []
-    #                             for o in out:
-    #                                 for m in mult:
-    #                                     temp.append(o*m)
-    #                             out = temp
-    #             quit()
-    #         return out
-    #
-
-    #
-    # def matrix_to_dict(self):
-    #     # turn list back to dict
-    #     for c in v_node.children:
-    #         if c in factors.keys():
-    #             c_node = bn.getNode(c)
-    #             if len(c_node.originalParents) == 0:
-    #                 c_node.originalParents = c_node.parent
-    #             temp = c_node.originalParents.copy()
-    #             temp.remove(v)
-    #             v_node.parent += temp
-    #             v_node.parent.append(c)
-    #     v_node.domain_exists = False
-    #     par_val = []
-    #     for par in v_node.parent:
-    #         if bn.getNode(par).domain_exists == True:
-    #             par_val.append(bn.getNode(par).domain)
-    #     par_keys = list(itertools.product(*par_val))
-    #     # print(par_keys)
-    #     # print(v_node.parent)
-    #     # print(looking_f_keys)
-    #     # print('ret_val', ret_val)
-    #     new_dict = {}
-    #     for i in range(len(par_keys)):
-    #         key = ""
-    #         for val in par_keys[i]:
-    #             key += str(val) + ', '
-    #         key = key[:-2]
-    #         new_dict[key] = ret_val[i]
-    #     print(new_dict)
 

@@ -73,97 +73,65 @@ class ExactInference:
         looking_f = []
         looking_f_keys = []
         for f in factors.keys():
-            check = f.replace('[', "")
-            check = check.replace(']', "")
-            check = check.replace("'", "")
-            check = check.replace(" ", "")
-            check = check.split(',')
-            print(check)
+            check = self.key_to_string(f)
             if v in check:
                 looking_f += [factors[f]]
-                print(factors[f])
                 looking_f_keys.append(check)
         print('this', looking_f_keys)
-        pp = self.pointwiseProduct(looking_f, looking_f_keys, bn, v)
+        pp = self.pointwiseProduct(looking_f, looking_f_keys, bn)
         return pp
 
-    def pointwiseProduct(self, factors, keys, bn, v):
+    def pointwiseProduct(self, factors, keys, bn):
         out = {}
         out_keys = []
-        print(len(factors))
-        print(len(keys))
         for i in range(len(factors)):
-            print(factors[i])
             if len(out) == 0:
-                out[str(keys[i])] = factors[i]
-                out_keys += keys[i]
+                out = factors[i]
+                out_keys = keys[i]
             else:
                 overlap = []
                 for k in keys[i]:
                     if k in out_keys:
                         overlap.append(k)
-                print("O", overlap)
                 loc1 = []
                 loc2 = []
                 #DEAL WITH MULTIPLE OVERLAPSSSSS
                 #for o in overlap:
                 loc1 = out_keys.index(overlap[0])
                 loc2 = keys[i].index(overlap[0])
-                print('look here')
-                print(len(out_keys))
-                print(len(keys[i]))
-                print(factors[i].keys())
-                print(out.keys())
-                out_keys = (keys[i] + out_keys)
-                out_keys.remove(overlap[0])
+
+                temp = keys[i][:loc2] + keys[i][loc2 + 1:]
+                out_keys = temp + out_keys
+                temp_dict = {}
                 for d in bn.getNode(overlap[0]).domain:
                     for key, val in factors[i].items():
-                        check = key.replace('[', "")
-                        check = check.replace(']', "")
-                        check = check.replace("'", "")
-                        check = check.replace(" ", "")
-                        check = check.split(',')
+                        check = self.key_to_string(key)
                         for key1, val1 in out.items():
-                            check1 = key1.replace('[', "")
-                            check1 = check1.replace(']', "")
-                            check1 = check1.replace("'", "")
-                            check1 = check1.replace(" ", "")
-                            check1 = check1.split(',')
-
+                            check1 = self.key_to_string(key1)
                             if check[loc2] == d and check1[loc1] == d:
-                                out[(check + check1).remove(overlap[0])] = val * val1
+                                temp = check[:loc2] + check[loc2+1:]
+                                temp_dict[str(temp + check1)] = val * val1
+                out = temp_dict
         print(out)
+        return {str(out_keys): out}
+
+    def dict_to_matrix(self, dict):
+        out = []
+        for keys, vals in dict.items():
+            try:
+                for keys1, vals1 in vals.items():
+                    out.append(vals1)
+            except:
+                out.append(vals)
         return out
-    # def pointwiseProduct(self, factors, keys, bn, v):  #return a matrix
-    #     # if len(factors) == 1:
-    #     #     return factors[0]
-    #     # else:
-    #     count = {}
-    #     print(factors)
-    #     print(keys)
-    #     for key in keys:
-    #         if key in count:
-    #             count[key] += 1
-    #         else:
-    #             count[key] = 1
-    #         check = bn.getNode(key)
-    #         for c in check.parent:
-    #             if c in count:
-    #                 count[c] += 1
-    #             else:
-    #                 count[c] = 1
-    #     notable_var = []
-    #     for key, val in count.items():
-    #         if val > 1:
-    #             notable_var.append(key)
-    #     # notable_var.remove(v)
-    #     v_node = bn.getNode(v)
-    #     for i in range(len(factors)):
-    #         if len(notable_var) == 0 or keys[i] not in notable_var:
-    #             v_node.parent
-    #             out = factors[i]
-    #             #simple multiply
-    #         # else:
+
+    def key_to_string(self, key):
+        check = key.replace('[', "")
+        check = check.replace(']', "")
+        check = check.replace("'", "")
+        check = check.replace(" ", "")
+        check = check.split(',')
+        return check
 
 
         # ret_val = []
@@ -275,15 +243,7 @@ class ExactInference:
     #             quit()
     #         return out
     #
-    # def dict_to_matrix(self, dict):
-    #     out = []
-    #     for keys, vals in dict.items():
-    #         try:
-    #             for keys1, vals1 in vals.items():
-    #                 out.append(vals1)
-    #         except:
-    #             out.append(vals)
-    #     return out
+
     #
     # def matrix_to_dict(self):
     #     # turn list back to dict

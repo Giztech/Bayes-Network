@@ -17,6 +17,8 @@ class ExactInference:
             if v != query and v not in evidence.keys():    #is a hidden variable if hidden we sum over that var
                 print('calling SumOut')
                 factors = self.sumOut(v, factors, bn)
+                print(factors)
+                quit()
         print('ENDING')
         return np.linalg.norm(self.pointwiseProduct(factors))
 
@@ -84,10 +86,46 @@ class ExactInference:
                 print(factors[f])
                 looking_f_keys.append(check)
         print('this', looking_f_keys)
-        pp = self.pointwiseProduct(looking_f, looking_f_keys, bn, v)
-        return pp
+        # pp = self.pointwiseProduct(looking_f, looking_f_keys, bn, v)
+        mylist = {}
+        for key, val in factors.items():
+            k = key
+            check = k.replace('[', "")
+            check = check.replace(']', "")
+            check = check.replace("'", "")
+            check = check.replace(" ", "")
+            check = check.split(',')
+            for c in check:
+                if c == v:
+                    loc = check.index(c)
+                    # print(loc)
+            del check[loc]
+            newkey = str(check)
+            for d in v_node.domain:
+                for key1, value in val.items():
+                    print('heres valeu', value)
+                    check = key1.replace('[', "")
+                    check = check.replace(']', "")
+                    check = check.replace("'", "")
+                    check = check.replace(" ", "")
+                    check = check.split(',')
+                    if d in check[loc]:
+                        print('before', check)
+
+                        del check[loc]
+                        if str(check) not in mylist.keys():
+                            mylist[str(check)] = value
+                        else:
+                            mylist[str(check)] += value
+                        print('check after', check)
+
+
+
+        print(mylist)
+        return {newkey: mylist}
 
     def pointwiseProduct(self, factors, keys, bn, v):
+        print('pp\n\n\n')
         out = {}
         out_keys = []
         print(len(factors))
@@ -96,6 +134,7 @@ class ExactInference:
             print(factors[i])
             if len(out) == 0:
                 out[str(keys[i])] = factors[i]
+                print('out', out)
                 out_keys += keys[i]
             else:
                 overlap = []
@@ -124,14 +163,16 @@ class ExactInference:
                         check = check.replace(" ", "")
                         check = check.split(',')
                         for key1, val1 in out.items():
-                            check1 = key1.replace('[', "")
-                            check1 = check1.replace(']', "")
-                            check1 = check1.replace("'", "")
-                            check1 = check1.replace(" ", "")
-                            check1 = check1.split(',')
-
-                            if check[loc2] == d and check1[loc1] == d:
-                                out[(check + check1).remove(overlap[0])] = val * val1
+                            print('hereke', key1, 'KDFJDK')
+                            for vit in val1.keys():
+                                check1 = vit.replace('[', "")
+                                check1 = check1.replace(']', "")
+                                check1 = check1.replace("'", "")
+                                check1 = check1.replace(" ", "")
+                                check1 = check1.split(',')
+                                # print('lalal', check,check1)
+                                # if check[loc2] == d and check1[loc1] == d:
+                                #     out[(check + check1).remove(overlap[0])] = val * val1
         print(out)
         return out
     # def pointwiseProduct(self, factors, keys, bn, v):  #return a matrix

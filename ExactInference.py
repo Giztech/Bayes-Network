@@ -11,12 +11,16 @@ class ExactInference:
             quit()
         factors = {}   #3d dict [v][string of parents][v.domain val]
         # instead of reversed do we need a heuristic for ordering
+        i = 0
         for v in reversed(bn.variables):
+            i+=1
             print(v)
             factors = {**self.makeFactor(v, evidence, bn), **factors}
             if v != query and v not in evidence.keys():    #is a hidden variable if hidden we sum over that var
                 print('calling SumOut')
                 factors = self.sumOut(v, factors, bn)
+                if i ==9:
+                    quit()
         print('ENDING')
         return np.linalg.norm(self.dict_to_matrix(self.pointwiseProduct(factors.values(), factors.keys(), bn)))
 
@@ -77,16 +81,11 @@ class ExactInference:
                 looking_f += [factors[f]]
                 looking_f_keys.append(check)
         pp = self.pointwiseProduct(looking_f, looking_f_keys, bn)
-        print('this', looking_f_keys)
-        # pp = self.pointwiseProduct(looking_f, looking_f_keys, bn, v)
+        # print('this', looking_f_keys)
         mylist = {}
-        for key, val in factors.items():
+        for key, val in pp.items():
             k = key
-            check = k.replace('[', "")
-            check = check.replace(']', "")
-            check = check.replace("'", "")
-            check = check.replace(" ", "")
-            check = check.split(',')
+            check = self.key_to_string(key)
             for c in check:
                 if c == v:
                     loc = check.index(c)
@@ -95,25 +94,18 @@ class ExactInference:
             newkey = str(check)
             for d in v_node.domain:
                 for key1, value in val.items():
-                    print('heres valeu', value)
-                    check = key1.replace('[', "")
-                    check = check.replace(']', "")
-                    check = check.replace("'", "")
-                    check = check.replace(" ", "")
-                    check = check.split(',')
+                    check = self.key_to_string(key1)
                     if d in check[loc]:
-                        print('before', check)
 
                         del check[loc]
                         if str(check) not in mylist.keys():
                             mylist[str(check)] = value
                         else:
                             mylist[str(check)] += value
-                        print('check after', check)
 
 
 
-        print(mylist)
+        # print(mylist)
         return {newkey: mylist}
 
     def pointwiseProduct(self, factors, keys, bn):
@@ -153,7 +145,7 @@ class ExactInference:
                                     temp = check[:loc2[x]] + check[loc2[x]+1:]
                                     temp_dict[str(temp + check1)] = val * val1
                 out = temp_dict
-        print(out)
+        # print(out)
         return {str(out_keys): out}
 
     def dict_to_matrix(self, dict):

@@ -60,7 +60,7 @@ class ExactInference:
                         key += str(val) + ', '
                     key = key[:-2]
                     for vk in v_key:
-                        print('makefactor', key, vk, c_node.prob)
+                        # print('makefactor', key, vk, c_node.prob)
                         factors[key + ", " + vk] = c_node.prob[key][vk]
 
             out[str(c_node.parent + [child])] = factors
@@ -76,26 +76,27 @@ class ExactInference:
             c_node = bn.getNode(c)
             c_node.parent.remove(v)
             c_node.prob = {}
-
         looking_f = []
         looking_f_keys = []
+        out = {}
         for f in factors.keys():
             check = self.key_to_string(f)
             if v in check:
                 looking_f += [factors[f]]
                 looking_f_keys.append(check)
+            else:
+                out[f] = factors[f]
         pp = self.pointwiseProduct(looking_f, looking_f_keys, bn)
         # print('this', looking_f_keys)
         mylist = {}
         print(pp)
         for key, val in pp.items():
-            k = key
             check = self.key_to_string(key)
             for c in check:
                 if c == v:
                     loc = check.index(c)
                     # print(loc)
-                    del check[loc]
+            del check[loc]
 
             newkey = str(check)
             for d in v_node.domain:
@@ -111,8 +112,10 @@ class ExactInference:
 
 
 
-        print('after sumout', {newkey: mylist}, '\n\n')
-        return {newkey: mylist}
+        # print('after sumout', {newkey: mylist}, '\n\n')
+        # rebuild the factors list with pointwise and other variables
+        out[newkey] = mylist
+        return out
 
     def pointwiseProduct(self, factors, keys, bn):
         out = {}

@@ -18,7 +18,7 @@ class ExactInference:
                 print('calling SumOut')
                 factors = self.sumOut(v, factors, bn)
         print('ENDING')
-        return np.linalg.norm(self.pointwiseProduct(factors))
+        return np.linalg.norm(self.dict_to_matrix(self.pointwiseProduct(factors.values(), factors.keys(), bn)))
 
 
     def makeFactor(self, v, e, bn):
@@ -61,7 +61,6 @@ class ExactInference:
 
     def sumOut(self, v, factors, bn):
         #iterate over domain v
-        print('var', v)
         v_node = bn.getNode(v)
         for p in v_node.parent:
             p_node = bn.getNode(p)
@@ -77,7 +76,6 @@ class ExactInference:
             if v in check:
                 looking_f += [factors[f]]
                 looking_f_keys.append(check)
-        print('this', looking_f_keys)
         pp = self.pointwiseProduct(looking_f, looking_f_keys, bn)
         return pp
 
@@ -95,22 +93,28 @@ class ExactInference:
                         overlap.append(k)
                 loc1 = []
                 loc2 = []
-                #DEAL WITH MULTIPLE OVERLAPSSSSS
-                #for o in overlap:
-                loc1 = out_keys.index(overlap[0])
-                loc2 = keys[i].index(overlap[0])
+                domain_vals = []
 
-                temp = keys[i][:loc2] + keys[i][loc2 + 1:]
+                for o in overlap:
+                    loc1.append(out_keys.index(o))
+                    loc2.append(keys[i].index(o))
+                    domain_vals.append(bn.getNode(o).domain)
+                dv = list(itertools.product(*domain_vals))
+                temp = keys[i][:loc2[0]]
+                for l in range(1, len(loc2) - 1):
+                    temp += keys[i][loc2[l] + 1:]
+                temp += keys[i][loc2[-1] + 1:]
                 out_keys = temp + out_keys
                 temp_dict = {}
-                for d in bn.getNode(overlap[0]).domain:
+                for d in dv:
                     for key, val in factors[i].items():
                         check = self.key_to_string(key)
                         for key1, val1 in out.items():
                             check1 = self.key_to_string(key1)
-                            if check[loc2] == d and check1[loc1] == d:
-                                temp = check[:loc2] + check[loc2+1:]
-                                temp_dict[str(temp + check1)] = val * val1
+                            for x in range(len(loc1)):
+                                if check[loc2[x]] == d[x] and check1[loc1[x]] == d[x]:
+                                    temp = check[:loc2[x]] + check[loc2[x]+1:]
+                                    temp_dict[str(temp + check1)] = val * val1
                 out = temp_dict
         print(out)
         return {str(out_keys): out}

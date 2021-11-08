@@ -3,6 +3,7 @@ import itertools
 
 class ExactInference:
     def __init__(self):
+        self.count = 0
         pass
 
     def variableElimination(self, query, evidence, bn):
@@ -10,17 +11,14 @@ class ExactInference:
             print("NOPE")
             quit()
         factors = {}   #3d dict [v][string of parents][v.domain val]
-        seen = []
         # instead of reversed do we need a heuristic for ordering
         for v in reversed(bn.variables):
             print(v)
-            # seen.append(v)
-            # seen += bn.getNode(v).children
-            # if v not in seen:
             factors = {**self.makeFactor(v, evidence, bn), **factors}
             if v != query and v not in evidence.keys():    #is a hidden variable if hidden we sum over that var
-                print('USM OUT')
+                print('calling SumOut')
                 factors = self.sumOut(v, factors, bn)
+        print(factors)
         return np.linalg.norm(self.dict_to_matrix(self.pointwiseProduct(factors.values(), factors.keys(), bn)))
 
 
@@ -33,6 +31,8 @@ class ExactInference:
             par_val = []
             factors = {}
             c_node = bn.getNode(child)
+            if c_node.prob == {}:
+                continue
             for par in c_node.parent:
                 if par not in e.keys():
                     var.append(par)
@@ -52,18 +52,12 @@ class ExactInference:
                     factors = c_node.prob
             else:
                 par_keys = list(itertools.product(*par_val))
-                print(c_node.name)
-                print(c_node.parent)
-                print(par_keys)
                 for pk in par_keys:
                     key = ""
                     for val in pk:
                         key += str(val) + ', '
                     key = key[:-2]
-                    print(c_node.prob)
-                    print(key)
                     for vk in v_key:
-                        print(vk)
                         factors[key + ", " + vk] = c_node.prob[key][vk]
             out[str(c_node.parent + [child])] = factors
         return out #dict of probs
@@ -71,12 +65,14 @@ class ExactInference:
     def sumOut(self, v, factors, bn):
         #iterate over domain v
         v_node = bn.getNode(v)
+        out = {}
         for p in v_node.parent:
             p_node = bn.getNode(p)
             p_node.children.remove(v)
         for c in v_node.children:
             c_node = bn.getNode(c)
             c_node.parent.remove(v)
+            c_node.prob = {}
 
         looking_f = []
         looking_f_keys = []
@@ -85,14 +81,19 @@ class ExactInference:
             if v in check:
                 looking_f += [factors[f]]
                 looking_f_keys.append(check)
+            else:
+                out[f] = factors[f]
         pp = self.pointwiseProduct(looking_f, looking_f_keys, bn)
+        # print('this', looking_f_keys)
         mylist = {}
         for key, val in pp.items():
             check = self.key_to_string(key)
             for c in check:
                 if c == v:
                     loc = check.index(c)
-            del check[loc]
+                    # print(loc)
+                    del check[loc]
+
             newkey = str(check)
             for d in v_node.domain:
                 for key1, value in val.items():
@@ -103,7 +104,8 @@ class ExactInference:
                             mylist[str(check)] = value
                         else:
                             mylist[str(check)] += value
-        return {newkey: mylist}
+        out[newkey] = mylist
+        return out
 
     def pointwiseProduct(self, factors, keys, bn):
         out = {}

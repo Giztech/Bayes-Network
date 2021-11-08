@@ -9,14 +9,16 @@ class ExactInference:
         if query in evidence.keys():
             print("NOPE")
             quit()
-        factors = {}    #3d dict [v][string of parents][v.domain val]
+        factors = {}   #3d dict [v][string of parents][v.domain val]
         # instead of reversed do we need a heuristic for ordering
         for v in reversed(bn.variables):
             print(v)
-            factors[v] = [self.makeFactor(v, evidence, bn)]
+            v_node = bn.getNode(v)
+            name = v + v_node.parent
+            factors[name] = self.makeFactor(v, evidence, bn)
             if v != query and v not in evidence.keys():    #is a hidden variable if hidden we sum over that var
                 print('calling SumOut')
-                factors = {v: self.sumOut(v, factors, bn)}
+                factors[idk] = self.sumOut(v, factors, bn)
         print('ENDING')
         return np.linalg.norm(self.pointwiseProduct(factors))
 
@@ -58,16 +60,13 @@ class ExactInference:
         print('var', v)
         v_node = bn.getNode(v)
         looking_f = factors[v]    #list of dicts
-        looking_f_keys = [v]
+        looking_f_keys = v
         for f in factors.keys():
-            f_node = bn.getNode(f)
-            if v in f_node.parent:  #if v is a child of f
-                # print(f)
-                # print(factors[f])
+            if v in f:
                 looking_f += factors[f]
-                looking_f_keys.append(f_node.name)
-                # print(looking_f)
-                # print(looking_f_keys)
+                looking_f_keys.append(f)
+        pp = self.pointwiseProduct(looking_f, looking_f_keys, bn, v)
+
         ret_val = []
         for d in v_node.domain: #get var at all stages, make factors for each
             to_pp = []
@@ -139,28 +138,41 @@ class ExactInference:
         return [new_dict]
 
     def pointwiseProduct(self, factors, keys, bn, v):  #return a matrix
-        if len(factors) == 1:
-            return self.dict_to_matrix(factors)   #get fixed
-        else:
-            count = {}
-            print(factors)
-            print(keys)
-            for key in keys:
-                if key in count:
-                    count[key] += 1
+        # if len(factors) == 1:
+        #     return factors[0]
+        # else:
+        count = {}
+        print(factors)
+        print(keys)
+        for key in keys:
+            if key in count:
+                count[key] += 1
+            else:
+                count[key] = 1
+            check = bn.getNode(key)
+            for c in check.parent:
+                if c in count:
+                    count[c] += 1
                 else:
-                    count[key] = 1
-                check = bn.getNode(key)
-                for c in check.parent:
-                    if c in count:
-                        count[c] += 1
-                    else:
-                        count[c] = 1
-            notable_var = []
-            for key, val in count.items():
-                if val > 1:
-                    notable_var.append(key)
-            notable_var.remove(v)
+                    count[c] = 1
+        notable_var = []
+        for key, val in count.items():
+            if val > 1:
+                notable_var.append(key)
+        # notable_var.remove(v)
+        v_node = bn.getNode(v)
+        for i in range(len(factors)):
+            if len(notable_var) == 0 or keys[i] not in notable_var:
+                v_node.parent
+                out = factors[i]
+                #simple multiply
+            else:
+
+
+
+
+
+
             if len(notable_var) == 0:
                 for i in range(len(factors)):
                     if i == 0:
@@ -174,27 +186,23 @@ class ExactInference:
                         out = temp
             else:
                 print(notable_var)
-                # n_domains = []
-                # for n in notable_var:
-                #     n_node = bn.getNode(n)
-                #     n_domains.append(n_node.parent)
-                #     print(n_node.parent)
-                # par_keys = list(itertools.product(*n_domains))
-                # print(n_domains)
-                # print(par_keys)
-                # quit()
                 for n in notable_var:
                     for d in bn.getNode(n).domain:
                         for i in range(len(factors)):
                             if i == 0:
                                 out = self.dict_to_matrix(factors[i])
+                                if bn.getNode(keys[i]).name == n:
+                                    pass
+                                elif n in
                             else:
                                 mult = self.dict_to_matrix(factors[i])
+                                print(bn.getNode(keys[i]))
                                 temp = []
                                 for o in out:
                                     for m in mult:
                                         temp.append(o*m)
                                 out = temp
+                quit()
             return out
 
     def dict_to_matrix(self, dict):

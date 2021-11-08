@@ -58,6 +58,7 @@ class ExactInference:
                         key += str(val) + ', '
                     key = key[:-2]
                     for vk in v_key:
+                        # print('makefactor', key, vk, c_node.prob)
                         factors[key + ", " + vk] = c_node.prob[key][vk]
             out[str(c_node.parent + [child])] = factors
         return out #dict of probs
@@ -65,7 +66,6 @@ class ExactInference:
     def sumOut(self, v, factors, bn):
         #iterate over domain v
         v_node = bn.getNode(v)
-        out = {}
         for p in v_node.parent:
             p_node = bn.getNode(p)
             p_node.children.remove(v)
@@ -73,9 +73,9 @@ class ExactInference:
             c_node = bn.getNode(c)
             c_node.parent.remove(v)
             c_node.prob = {}
-
         looking_f = []
         looking_f_keys = []
+        out = {}
         for f in factors.keys():
             check = self.key_to_string(f)
             if v in check:
@@ -92,7 +92,7 @@ class ExactInference:
                 if c == v:
                     loc = check.index(c)
                     # print(loc)
-                    del check[loc]
+            del check[loc]
 
             newkey = str(check)
             for d in v_node.domain:
@@ -163,6 +163,4 @@ class ExactInference:
         check = check.replace(" ", "")
         check = check.split(',')
         return check
-
-
 

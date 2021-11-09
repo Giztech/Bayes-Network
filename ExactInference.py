@@ -17,8 +17,10 @@ class ExactInference:
             factors = {**self.makeFactor(v, evidence, bn), **factors}
             if v != query and v not in evidence.keys():    #is a hidden variable if hidden we sum over that var
                 factors = self.sumOut(v, factors, bn)
+            print(factors["['" + query + "']"])
         print([float(i)/sum(self.dict_to_matrix(factors["['"+query+"']"])) for i in self.dict_to_matrix(factors["['"+query+"']"])])
         print(self.count)
+        print(factors["['"+query+"']"])
         return [float(i)/sum(self.dict_to_matrix(factors["['"+query+"']"])) for i in self.dict_to_matrix(factors["['"+query+"']"])]
 
 
@@ -83,25 +85,32 @@ class ExactInference:
             else:
                 out[f] = factors[f]
         pp = self.pointwiseProduct(looking_f, looking_f_keys, bn)
+        for key, val in pp.items():
+            for k, v in val.items():
+
         mylist = {}
+        gone = None
         for key, val in pp.items():
             check = self.key_to_string(key)
             for c in check:
                 if c == v:
                     loc = check.index(c)
-                    del check[loc]
+                    gone = loc
 
-            newkey = str(check)
             for d in v_node.domain:
                 for key1, value in val.items():
-                    check = self.key_to_string(key1)
-                    if d in check[loc]:
-                        del check[loc]
-                        if str(check) not in mylist.keys():
-                            mylist[str(check)] = value
+                    check1 = self.key_to_string(key1)
+                    if d in check1[loc]:
+                        temp = check1.copy()
+                        del temp[loc]
+                        if str(temp) not in mylist.keys():
+                            mylist[str(temp)] = value
                         else:
-                            mylist[str(check)] += value
-        out[newkey] = mylist
+                            mylist[str(temp)] += value
+
+            del check[gone]
+        out[str(check)] = mylist
+        print('here', out)
         return out
 
     def pointwiseProduct(self, factors, keys, bn):
@@ -120,13 +129,11 @@ class ExactInference:
                 loc1 = []
                 loc = []
                 domain_vals = []
-                print('overlap', overlap)
                 for o in overlap:
                     loc1.append(out_keys.index(o))
                     loc.append(keys[i].index(o))
                     domain_vals.append(bn.getNode(o).domain)
                 dv = list(itertools.product(*domain_vals))
-                temp = []
                 temp_dict = {}
                 for d in dv:
                     for key, val in factors[i].items():
@@ -137,25 +144,27 @@ class ExactInference:
                             for x in range(len(loc1)):
                                 if check[loc[x]] == d[x] and check1[loc1[x]] == d[x]:
                                     count += 1
-                            if count == len(dv):
-                                print('do we get here')
-                                #print(check + check1)
-                                index = check.copy()
-                                for x in loc:
-                                    del index[x]
-                                gorilla = index + check1
-                                # temp = check[:loc2[x]] + check[loc2[x]+1:]
-                                temp_dict[str(gorilla)] = val * val1
+                            #print('here', count, len(loc1))
+                            if count == len(loc1):
+                                temp1 = []
+                                for l in range(len(check)):
+                                    if l not in loc:
+                                        temp1.append(check[l])
+                                index = temp1 + check1
+                                use = ""
+                                for ind in index:
+                                    use += str(ind) + ', '
+                                use = use[:-2]
+                                temp_dict[use] = val * val1
                                 self.count += 1
+                print(temp_dict)
+                out = temp_dict
+                temp = []
                 for l in range(len(keys[i])):
-                    if l not in loc2:
+                    if l not in loc:
                         temp.append(keys[i][l])
                 out_keys = temp + out_keys
-                out = temp_dict
-                print(out_keys)
-                print(out)
-        print(out_keys)
-        print(out)
+        print('out', out)
         return {str(out_keys): out}
 
     def dict_to_matrix(self, dict):

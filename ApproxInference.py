@@ -12,24 +12,10 @@ class ApproxInference:
 
         # get the children of the selected node
         # since we look for the children's parents and the node's parents while looking at their
-        # probabilities, we don't need to add them to the blanket
+        # probabilities, we don't need to add them to the blanket initially
 
         for child in node.children:
             markov_list.append(child)
-
-
-        list(set(markov_list))
-
-        '''
-        Test Statement
-        
-        for i in markov_list:
-            node = bn.getNode(i)
-            print(node.name)
-        
-        '''
-
-
         return markov_list
 
     '''
@@ -39,16 +25,18 @@ class ApproxInference:
     and the probabilities provided
     '''
     def forwardSampling(self, evidence, bn):
+        # print('forward sampling')
         # if the node is evidence, we want to set it first!
         for node in bn.nodes:
             for key, val in evidence.items():
                 if key == node.name:
                     if val in node.domain:
                         node.state = val
+                        # print('evidence', node.name, node.state)
                     else:
                         # if the val is not in node domain, the evidence was typed in wrong
                         print(val)
-                        print('loser')
+                        print('evidence is not in the correct format. please try again')
         # after setting the evidence, go through and set the rest of the states with forward elimination
         for node in bn.nodes:
             if node.state == '':
@@ -66,6 +54,7 @@ class ApproxInference:
                     # if the node has parents, we have to
                     problist, keylist = self.getProb(parents, node, bn)
                     bn = self.updateState(node, problist, keylist, bn)
+        # print('end of forward sampling\n\n')
         return bn
 
     '''
@@ -73,6 +62,7 @@ class ApproxInference:
     used only for forward sampling
     '''
     def setParent(self, m, bn):
+        # print('parent', m.name)
         gms = m.parent
         if len(gms) == 0:
             # if this node has no parents, then we can just set it based on the probability given
@@ -89,6 +79,7 @@ class ApproxInference:
     generates a random number and based on the probability, sets the state of the node given 
     '''
     def updateState(self, node, problist, keylist, bn):
+        # print('update state', node.name)
         value = rand.random()
         for y in range(len(problist)):
             if y == 0:
@@ -112,6 +103,7 @@ class ApproxInference:
         for p in parents:
             parNode = bn.getNode(p)
             if parNode.state == '':
+                # print('set parent of', node.name)
                 bn = self.setParent(parNode, bn)
             parList += (parNode.state) + ', '
         parList = parList[:-2]
@@ -128,6 +120,7 @@ class ApproxInference:
     samples the current node and sets the value based on the markov blanket
     '''
     def setValue(self, node, bn):
+        # print('set value')
         mb = self.get_markov_blanket(node, bn)
         # print(mb)
         total_prob = []
@@ -139,26 +132,26 @@ class ApproxInference:
             # to deal with no parents
             if len(node.parent) == 0:
                 problist.append(node.prob[d])
-            # to ddeal with parents
+            # to deal with parents (who are in the markov blanket)
             else:
                 for par in node.parent:
                     parlist += bn.getNode(par).state + ', '
+                    # print(par)
                 parlist = parlist[:-2]
 
                 for key, val in node.prob.items():
                     if parlist == key:
                         problist.append(val[d])
 
-            # to get the probabilities of the markov blanket
+            # to get the probabilities of the children of the markov blanket
             for name in mb:
                 mbnode = bn.getNode(name)
-                # print(name, mbnode.state)
+                # print(name)
 
                 parlist = ''
                 for par in mbnode.parent:
                     parlist += bn.getNode(par).state + ', '
                 parlist = parlist[:-2]
-                # print(parlist, 'aprlier')
 
 
                 keylist = []
@@ -176,20 +169,19 @@ class ApproxInference:
 
         calc_prob = []
         total = 0
-        # if node.name == 'RiskAversion':
-        #     print('total prob', total_prob)
 
+        # normalizing
         for m in total_prob:
             total += m
         if total == 0:
             # print('total is 0 normalizing', node.name)
             for m in total_prob:
-                # if the probablility of all the domains equate to 0, set the probabilities equal to each
+                # if the probablility of all the domains equate to 0, set the probabilities of each state to be equal
                 calc_prob.append(1/len(total_prob))
         else:
             for m in total_prob:
                 calc_prob.append(m / total)
-
+        # print(calc_prob)
         bn = self.updateState(node, calc_prob, node.domain, bn)
 
         return bn
@@ -217,12 +209,15 @@ class ApproxInference:
 
         for j in range(N):
             node = rand.choice(Z)
-
+            # print('node chosen', node.name, 'node state', node.state)
             x = self.setValue(node, x)
+            # print('new state', node.state, '\n\n')
             # print('after', node.state, '\n\n\n\n')
             query = bn.getNode(X)
             count[query.state] += 1
+        #
         # print(count)
+        # # to normalize count
         total = 0
         for key, val in count.items():
             total += val

@@ -46,7 +46,11 @@ class ApproxInference:
         for node in bn.nodes:
             for key, val in evidence.items():
                 if key == node.name:
-                    node.state = val
+                    if val in node.domain:
+                        node.state = val
+                    else:
+                        print(val)
+                        print('loser')
         # after setting the evidence, go through and set the rest of the states
         for node in bn.nodes:
             if node.state == '':

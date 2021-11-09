@@ -10,17 +10,13 @@ class ApproxInference:
         markov_list = []
         node = X
 
-        # get the children and children's parents of selected node
+        # get the children of the selected node
+        # since we look for the children's parents and the node's parents while looking at their
+        # probabilities, we don't need to add them to the blanket
 
         for child in node.children:
             markov_list.append(child)
-            # for child_parent in node.parent:
-            #     markov_list.append(child_parent)
 
-        # get the parents of selected node
-
-        # for parent in node.parent:
-        #     markov_list.append(parent)
 
         list(set(markov_list))
 
@@ -35,6 +31,7 @@ class ApproxInference:
 
 
         return markov_list
+
     '''
     sets the initial values of the bayesian network by starting at the top node
     and setting the state based on the probability provided
@@ -49,9 +46,10 @@ class ApproxInference:
                     if val in node.domain:
                         node.state = val
                     else:
+                        # if the val is not in node domain, the evidence was typed in wrong
                         print(val)
                         print('loser')
-        # after setting the evidence, go through and set the rest of the states
+        # after setting the evidence, go through and set the rest of the states with forward elimination
         for node in bn.nodes:
             if node.state == '':
                 parents = node.parent
@@ -65,6 +63,7 @@ class ApproxInference:
                         keylist.append(key)
                     bn = self.updateState(node, problist, keylist, bn)
                 else:
+                    # if the node has parents, we have to
                     problist, keylist = self.getProb(parents, node, bn)
                     bn = self.updateState(node, problist, keylist, bn)
         return bn
@@ -99,7 +98,7 @@ class ApproxInference:
                     return bn
                 else:
                     continue
-            # the current value to be looking at should be the previous prbability plus the current probability
+            # the current value to be looking at should be the previous probability plus the current probability
             problist[y] += problist[y - 1]
             if value < problist[y]:
                 bn.updateState(node, keylist[y])
@@ -167,26 +166,30 @@ class ApproxInference:
                     if parlist == key:
                         for d1 in mbnode.domain:
                             if d1 == mbnode.state:
-                                problist.append( val[d1])
+                                problist.append(val[d1])
                         # problist.append(val)
                         # keylist.append(key)
-            # print('problist', problist)
-            mult = 1
+            mult = 1.0000000000
             for p in problist:
                 mult *= p
             total_prob.append(mult)
-            # print('\n\n New domain')
+
         calc_prob = []
         total = 0
-        # print('total prob', total_prob)
+        # if node.name == 'RiskAversion':
+        #     print('total prob', total_prob)
+
         for m in total_prob:
             total += m
         if total == 0:
-            print('total is 0', node.name)
+            # print('total is 0 normalizing', node.name)
+            for m in total_prob:
+                # if the probablility of all the domains equate to 0, set the probabilities equal to each
+                calc_prob.append(1/len(total_prob))
         else:
             for m in total_prob:
                 calc_prob.append(m / total)
-        # print('calc_prob', calc_prob)
+
         bn = self.updateState(node, calc_prob, node.domain, bn)
 
         return bn
@@ -210,34 +213,16 @@ class ApproxInference:
 
         # forward sampling to set the initial values for bn
         x = self.forwardSampling(evidence, bn)
-        # for node in x.nodes:
-        #     # print(node.name)
-        #     # print(node.domain)
-        #     if node.state == '':
-        #         print('aint no satte here')
-        test_node = bn.getNode('HR')
 
-        x.updateState(test_node, 'NORMAL')
-        test_node = bn.getNode('HRSAT')
-        x.updateState(test_node, 'NORMAL')
-        test_node = bn.getNode('HREKG')
-        x.updateState(test_node,'NORMAL')
-        test_node = bn.getNode('ERRCAUTER')
-        x.updateState(test_node, 'FALSE')
+
         for j in range(N):
             node = rand.choice(Z)
-            # if j%100000 == 0 :
-            #     print(j)
-            # if node == bn.getNode(X):
-            #     print('weredointit')
-            # print('before', node.name, node.domain)
-            # print(node.state)
-            # print(node.name, 'here\t\t', node.state)
+
             x = self.setValue(node, x)
             # print('after', node.state, '\n\n\n\n')
             query = bn.getNode(X)
             count[query.state] += 1
-        print(count)
+        # print(count)
         total = 0
         for key, val in count.items():
             total += val

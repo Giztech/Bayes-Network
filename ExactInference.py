@@ -85,8 +85,6 @@ class ExactInference:
             else:
                 out[f] = factors[f]
         pp = self.pointwiseProduct(looking_f, looking_f_keys, bn)
-        for key, val in pp.items():
-            for k, v in val.items():
 
         mylist = {}
         gone = None
@@ -109,6 +107,7 @@ class ExactInference:
                             mylist[str(temp)] += value
 
             del check[gone]
+        print(str(check))
         out[str(check)] = mylist
         print('here', out)
         return out

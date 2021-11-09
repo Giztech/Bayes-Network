@@ -34,13 +34,13 @@ def main():
     #
     # #Hailfinder
     #
-    bn = BayesNet('data/hailfinder.bif')
-    bn.generateList()
-    ei = ExactInference()
+    # bn = BayesNet('data/hailfinder.bif')
+    # bn.generateList()
+    # ei = ExactInference()
     #
     # #Little Evidence
     #
-    ei.variableElimination('SatContMoist', {'RSfest' : 'XNIL', 'N32StarFest' : 'XNIL', 'MountainFest' : 'XNIL', 'AreaMoDryAir' : 'VeryWet'}, bn)
+    # ei.variableElimination('SatContMoist', {'RSfest' : 'XNIL', 'N32StarFest' : 'XNIL', 'MountainFest' : 'XNIL', 'AreaMoDryAir' : 'VeryWet'}, bn)
     # ei.variableElimination('LLIW', {'RSfest' : 'XNIL', 'N32StarFest' : 'XNIL', 'MountainFest' : 'XNIL', 'AreaMoDryAir' : 'VeryWet'}, bn)
     #
     # #Moderate Evidence
@@ -50,13 +50,13 @@ def main():
     #
     # #Insurance
     #
-    # bn = BayesNet('data/insurance.bif')
-    # bn.generateList()
-    # ei = ExactInference()
+    bn = BayesNet('data/insurance.bif')
+    bn.generateList()
+    ei = ExactInference()
     #
     # #Little Evidence
-    #
-    # ei.variableElimination('MedCost', {'Age' : 'Adolescent', 'GoodStudent' : 'False', 'SeniorTrain' : 'False', 'DrivQuality' : 'Poor'},bn)
+    # 'Age' : 'Adolescent', 'GoodStudent' : 'False', 'SeniorTrain' : 'False', 'DrivQuality' : 'Poor'
+    ei.variableElimination('MedCost', {}, bn)
     # ei.variableElimination('ILiCost',{'Age': 'Adolescent', 'GoodStudent': 'False', 'SeniorTrain': 'False', 'DrivQuality': 'Poor'},bn)
     # ei.variableElimination('PropCost',{'Age': 'Adolescent', 'GoodStudent': 'False', 'SeniorTrain': 'False', 'DrivQuality': 'Poor'},bn)
     #

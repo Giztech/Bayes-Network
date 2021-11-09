@@ -22,15 +22,15 @@ def main():
     #
     # #Child
     #
-    # bn = BayesNet('data/child.bif')
-    # bn.generateList()
-    # ei = ExactInference()
+    bn = BayesNet('data/child.bif')
+    bn.generateList()
+    ei = ExactInference()
     #
     # #Little Evidence
-    # ei.variableElimination('Disease',{'LowerBodyO2' : '<5','RUQO2' : '>=12', 'CO2Report' : '>=7.5', 'XrayReport' : 'Asy/Patchy'},bn)
+    ei.variableElimination('Disease', {'LowerBodyO2' : '<5','RUQO2' : '12+', 'CO2Report' : '>=7.5', 'XrayReport' : 'Asy/Patchy'},bn)
     #
     # #Moderate Evidence
-    # ei.variableElimination('Disease',{'LowerBodyO2': '<5', 'RUQO2': '>=12', 'CO2Report': '>=7.5', 'XrayReport': 'Asy/Patchy', 'GruntingReport' : 'Yes', 'Age' : '11-30 Days'},bn)
+    # ei.variableElimination('Disease',{'LowerBodyO2': '<5', 'RUQO2': '12+', 'CO2Report': '>=7.5', 'XrayReport': 'Asy/Patchy', 'GruntingReport' : 'yes', 'LVHReport': 'yes', 'Age' : '11-30_days'},bn)
     #
     # #Hailfinder
     #
@@ -50,13 +50,13 @@ def main():
     #
     # #Insurance
     #
-    bn = BayesNet('data/insurance.bif')
-    bn.generateList()
-    ei = ExactInference()
+    # bn = BayesNet('data/insurance.bif')
+    # bn.generateList()
+    # ei = ExactInference()
     #
     # #Little Evidence
     # 'Age' : 'Adolescent', 'GoodStudent' : 'False', 'SeniorTrain' : 'False', 'DrivQuality' : 'Poor'
-    ei.variableElimination('MedCost', {}, bn)
+    # ei.variableElimination('MedCost', {}, bn)
     # ei.variableElimination('ILiCost',{'Age': 'Adolescent', 'GoodStudent': 'False', 'SeniorTrain': 'False', 'DrivQuality': 'Poor'},bn)
     # ei.variableElimination('PropCost',{'Age': 'Adolescent', 'GoodStudent': 'False', 'SeniorTrain': 'False', 'DrivQuality': 'Poor'},bn)
     #

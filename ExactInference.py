@@ -8,19 +8,17 @@ class ExactInference:
 
     def variableElimination(self, query, evidence, bn):
         if query in evidence.keys():
-            print(evidence[query])
+            print("NOPE")
             quit()
         factors = {}   #3d dict [v][string of parents][v.domain val]
         # instead of reversed do we need a heuristic for ordering
-        for v in bn.variables:
+        for v in reversed(bn.variables):
             print(v)
             factors = {**self.makeFactor(v, evidence, bn), **factors}
             if v != query and v not in evidence.keys():    #is a hidden variable if hidden we sum over that var
                 factors = self.sumOut(v, factors, bn)
-            print(factors["['" + query + "']"])
         print([float(i)/sum(self.dict_to_matrix(factors["['"+query+"']"])) for i in self.dict_to_matrix(factors["['"+query+"']"])])
         print(self.count)
-        print(factors["['"+query+"']"])
         return [float(i)/sum(self.dict_to_matrix(factors["['"+query+"']"])) for i in self.dict_to_matrix(factors["['"+query+"']"])]
 
 
@@ -85,40 +83,34 @@ class ExactInference:
             else:
                 out[f] = factors[f]
         pp = self.pointwiseProduct(looking_f, looking_f_keys, bn)
-        for key, val in pp.items():
-            for k, v in val.items():
-
+        # print('this', looking_f_keys)
         mylist = {}
-        gone = None
         for key, val in pp.items():
             check = self.key_to_string(key)
             for c in check:
                 if c == v:
                     loc = check.index(c)
-                    gone = loc
+                    # print(loc)
+                    del check[loc]
 
+            newkey = str(check)
             for d in v_node.domain:
                 for key1, value in val.items():
-                    check1 = self.key_to_string(key1)
-                    if d in check1[loc]:
-                        temp = check1.copy()
-                        del temp[loc]
-                        if str(temp) not in mylist.keys():
-                            mylist[str(temp)] = value
+                    check = self.key_to_string(key1)
+                    if d in check[loc]:
+                        del check[loc]
+                        if str(check) not in mylist.keys():
+                            mylist[str(check)] = value
                         else:
-                            mylist[str(temp)] += value
-
-            del check[gone]
-        out[str(check)] = mylist
-        print('here', out)
+                            mylist[str(check)] += value
+        out[newkey] = mylist
         return out
 
     def pointwiseProduct(self, factors, keys, bn):
-        print('new pp')
         out = {}
         out_keys = []
         for i in range(len(factors)):
-            if i == 0:  #len(out) == 0:
+            if len(out) == 0:
                 out = factors[i]
                 out_keys = keys[i]
             else:
@@ -127,44 +119,30 @@ class ExactInference:
                     if k in out_keys:
                         overlap.append(k)
                 loc1 = []
-                loc = []
+                loc2 = []
                 domain_vals = []
                 for o in overlap:
                     loc1.append(out_keys.index(o))
-                    loc.append(keys[i].index(o))
+                    loc2.append(keys[i].index(o))
                     domain_vals.append(bn.getNode(o).domain)
                 dv = list(itertools.product(*domain_vals))
+                temp = keys[i][:loc2[0]]
+                for l in range(1, len(loc2) - 1):
+                    temp += keys[i][loc2[l] + 1:]
+                temp += keys[i][loc2[-1] + 1:]
+                out_keys = temp + out_keys
                 temp_dict = {}
                 for d in dv:
                     for key, val in factors[i].items():
                         check = self.key_to_string(key)
                         for key1, val1 in out.items():
                             check1 = self.key_to_string(key1)
-                            count = 0
                             for x in range(len(loc1)):
-                                if check[loc[x]] == d[x] and check1[loc1[x]] == d[x]:
-                                    count += 1
-                            #print('here', count, len(loc1))
-                            if count == len(loc1):
-                                temp1 = []
-                                for l in range(len(check)):
-                                    if l not in loc:
-                                        temp1.append(check[l])
-                                index = temp1 + check1
-                                use = ""
-                                for ind in index:
-                                    use += str(ind) + ', '
-                                use = use[:-2]
-                                temp_dict[use] = val * val1
-                                self.count += 1
-                print(temp_dict)
+                                if check[loc2[x]] == d[x] and check1[loc1[x]] == d[x]:
+                                    temp = check[:loc2[x]] + check[loc2[x]+1:]
+                                    temp_dict[str(temp + check1)] = val * val1
+                                    self.count += 1
                 out = temp_dict
-                temp = []
-                for l in range(len(keys[i])):
-                    if l not in loc:
-                        temp.append(keys[i][l])
-                out_keys = temp + out_keys
-        print('out', out)
         return {str(out_keys): out}
 
     def dict_to_matrix(self, dict):
@@ -184,4 +162,5 @@ class ExactInference:
         check = check.replace(" ", "")
         check = check.split(',')
         return check
+
 
